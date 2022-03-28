@@ -16,150 +16,196 @@ class scene extends Phaser.Scene {
     this.load.image('tiles', 'assets/tilesets/platformPack_tilesheet.png');
     // Load the export Tiled JSON
     this.load.tilemapTiledJSON('map', 'assets/tilemaps/level1.json');
+
+    this.load.image('grenouille','assets/images/vf2.png')
+      this.load.image('sword','assets/images/sword.png')
   }
 
 
   create() {
-    /**
-     * on initialise les valeurs de la sauvegarde
-     * @type {number}
-     */
-    this.currentSaveX = 0;
-    this.currentSaveY = 0;
-    this.currentKey= 0;
-    /**
-     * creation de la map et du  layer plateforme
-     * @type {Phaser.GameObjects.Image}
-     */
+      this.changementAI = false;
+      let me=this;
+      this.gauche = true;
+      this.CD = true;
+      this.tireD = false;
+      /**
+       * on initialise les valeurs de la sauvegarde
+       * @type {number}
+       */
+      this.currentSaveX = 0;
+      this.currentSaveY = 0;
+      this.currentKey = 0;
+      /**
+       * creation de la map et du  layer plateforme
+       * @type {Phaser.GameObjects.Image}
+       */
 
-    const backgroundImage = this.add.image(0, 0, 'background').setOrigin(0, 0);
-    backgroundImage.setScale(2, 0.8);
-    const map = this.make.tilemap({key: 'map'});
-    const tileset = map.addTilesetImage('kenny_simple_platformer', 'tiles');
-    this.platforms = map.createStaticLayer('Platforms', tileset, 0, 200);
-    this.platforms.setCollisionByProperty({collides:true})
-
-
-
-    /**
-     * on créer les multiple groupe des layers objets
-     * @type {Phaser.Physics.Arcade.Group}
-     */
-    /** groupe porte */
-    this.doors=this.physics.add.group({
-      allowGravity: false,
-      immovable: true
-    })
-    map.getObjectLayer('Door').objects.forEach((doors)=>{
-      const DoorSprite = this.doors.create(doors.x, doors.y +9+ doors.height, 'door').setOrigin(0).key=1;
-    });
-    this.debug=this.doors.children.entries[1].key=3//cette porte nécessite 3 clefs
-
-/** groupe des clefs */
-    this.key=this.physics.add.group({
-      allowGravity: false,
-      immovable: true
-    })
-    map.getObjectLayer('key').objects.forEach((key)=>{
-      const keySprite = this.key.create(key.x, key.y +200- key.height, 'key').setOrigin(0).key=1;
-    });
+      const backgroundImage = this.add.image(0, 0, 'background').setOrigin(0, 0);
+      backgroundImage.setScale(2.5, 1.5);
+      const map = this.make.tilemap({key: 'map'});
+      const tileset = map.addTilesetImage('kenny_simple_platformer', 'tiles');
+      this.platforms = map.createStaticLayer('Platforms', tileset, 0, 200);
+      this.platforms.setCollisionByProperty({collides: true})
 
 
+      /**
+       * on créer les multiple groupe des layers objets
+       * @type {Phaser.Physics.Arcade.Group}
+       */
+      /** groupe porte */
+      this.doors = this.physics.add.group({
+          allowGravity: false,
+          immovable: true
+      })
+      map.getObjectLayer('Door').objects.forEach((doors) => {
+          const DoorSprite = this.doors.create(doors.x, doors.y + 9 + doors.height, 'door').setOrigin(0).key = 1;
+      });
+     //cette porte nécessite 3 clefs
 
-/** groupe des objets déplaçable*/
-    this.moves = this.physics.add.group({
-      allowGravity: true,
-      immovable: false
-    });
-    map.getObjectLayer('Mouvable').objects.forEach((move) => {
-      this.moveSprite = this.moves.create(move.x, move.y + 100 - move.height, 'move').setOrigin(0);
-    });
+      /** groupe des clefs */
+      this.key = this.physics.add.group({
+          allowGravity: false,
+          immovable: true
+      })
+      map.getObjectLayer('key').objects.forEach((key) => {
+          const keySprite = this.key.create(key.x, key.y + 200 - key.height, 'key').setOrigin(0).key = 1;
+      });
 
 
+      this.lianne = this.physics.add.group({
+          immovable: true,
+          allowGravity: false,
+      })
 
-    this.physics.add.collider(this.moves, this.moveSprite)
-    this.physics.add.collider(this.moves, this.platforms)
+      map.getObjectLayer('Lianne').objects.forEach((lianne) => {
+          this.lianneSprite = this.lianne.create(lianne.x, lianne.y + 200 - lianne.height, 'move').setOrigin(0);
+      });
 
-    this.player = new Player(this)
-/** gorupe des spike*/
-    this.spikes = this.physics.add.group({
-      allowGravity: false,
-      immovable: true
-    });
+      this.player = new Player(this)
 
-    map.getObjectLayer('Spikes').objects.forEach((spike) => {
-      const spikeSprite = this.spikes.create(spike.x, spike.y + 200 - spike.height, 'spike').setOrigin(0);
-      spikeSprite.body.setSize(spike.width, spike.height - 20).setOffset(0, 20);
-    });
-    this.physics.add.collider(this.player.player, this.spikes, this.playerHit, null, this);
+      this.cursors = this.input.keyboard.createCursorKeys();
+      this.cameras.main.startFollow(this.player.player);
 
-    /** groupe des saves*/
-    this.saves = this.physics.add.group({
-      allowGravity: false,
-      immovable: true
-    });
-    map.getObjectLayer('Save').objects.forEach((save) => {
-      const saveSprite = this.saves.create(save.x, save.y + 200 - save.height, 'save').setOrigin(0);
-    });
-    this.physics.add.overlap(this.player.player, this.saves, this.sauvegarde, null, this)
+      this.sword = this.physics.add.sprite(200, 100, "sword").setScale(0.1,0.1);
+      this.sword.body.setAllowGravity(false);
+      this.sword.setDepth(1);
+      this.sword.setVisible(false);
+      this.sword.attack = 100
+      this.sword.disableBody()
 
-    this.cursors = this.input.keyboard.createCursorKeys();
-    this.cameras.main.startFollow(this.player.player);
+      this.ai = this.physics.add.sprite(1100, 300, 'grenouille').setOrigin(0, 0);
+      this.ai.setDisplaySize(50,75);
+      this.ai.body.setAllowGravity(true);
+      this.ai.setVisible(true);
+      this.stop = this.ai.x
+
+      this.physics.add.collider(this.ai, this.platforms);
 
 
   }
+    Jump()
+    {
+        if(this.stop === this.ai.x && this.dist >=  110 ){
+            this.ai.set
+            this.ai.setVelocityY(-100);
+        }
+    }
+    IaGesttion(){
+        this.gauche = false;
 
-  /**
-   * fonction exécuter des lors que le joueur touche un objet "save" qui enregistre les variables du player au moment T + désactive la collision de l'objet pour ne pas réexécuter a chaque collision
-   * @param player
-   * @param saves
-   */
-  sauvegarde(player, saves) {
-    console.log("current", this.currentSaveX, this.currentSaveY)
-    this.currentSaveX = player.x
-    this.currentSaveY = player.y
-    saves.body.enable = false;
-    this.currentKey = player.key
-  }
+        this.dist = Phaser.Math.Distance.Between(this.player.player.x,this.player.player.y,this.ai.x,this.ai.y)
+        if (this.dist <= 300 ){
+            if (this.player.player.x <= this.ai.x){
+                this.ai.setVelocityX(-200)
+                this.gauche = true;
+            }
+            else if(this.player.player.x >= this.ai.x) {
+                this.ai.setVelocityX(200)
+            }
+            this.stop = this.ai.x;
+            this.time.addEvent({ delay: 50, callback: this.Jump, callbackScope: this });
 
-  playerHit(player, spike) {
-    player.setVelocity(0, 0);
-    player.x = this.currentSaveX
-    player.y = this.currentSaveY;
-    player.key= this.currentKey
-    player.play('idle', true);
-    player.setAlpha(0);
-    let tw = this.tweens.add({
-      targets: player,
-      alpha: 1,
-      duration: 100,
-      ease: 'Linear',
-      repeat: 5,
-    });
-  }
+            if (this.dist <=  100 ){
+                this.attackAi()
+            }
+        }
+    }
 
+    attackAi(){
+        this.ai.setVelocityX(0);
+
+        if(this.CD === true) {
+            this.sword.y = this.ai.y + 47;
+
+            if (this.gauche === true) {
+                this.sword.x = this.ai.x - 10;
+                this.sword.flipX = true;
+            } else {
+                this.sword.x = this.ai.x + 60;
+                this.sword.flipX = false;
+            }
+
+            //On rend l'épée visible
+            this.sword.setVisible(true);
+            //On active le body de l'épée
+            this.sword.enableBody()
+            //On ajoute un event avec un delay qui fera disparaitre l'épée dans 50 ms
+            this.time.addEvent({delay: 50, callback: this.onEvent, callbackScope: this});
+
+        }else{
+            this.time.addEvent({delay: 1000, callback: this.cd, callbackScope: this});
+        }
+    }
+    cd()
+    {
+        this.CD = true;
+        console.log("neuneu")
+    }
+
+    onEvent()
+    {
+        this.sword.disableBody()
+        this.sword.setVisible(false);
+        this.CD = false;
+        console.log("on se retire")
+    }
 
   update() {
-      if (this.player.pousse ){
-          this.player.pousse=false
+      this.IaGesttion()
+      switch (true) {
+          case this.cursors.right.isDown:
+              this.player.moveRight()
+              break;
+          case (this.cursors.space.isDown || this.cursors.up.isDown) && this.player.player.body.onFloor():
+              this.player.jump()
+              break;
+          case this.cursors.left.isDown:
+              this.player.moveLeft();
+              break;
+
+          default:
+              this.player.stop();
+
       }
-      else {
-          this.moves.setVelocityX(0)
+      if (this.player.player.onlianne) {
+          switch (true) {
+              case this.cursors.up.isDown:
+                  this.player.player.onlianne=false
+                  this.player.player.setVelocityY(-100);
+                  this.player.player.body.setAllowGravity(true);
+                  break;
+              case this.cursors.down.isDown:
+                  this.player.player.onlianne=false
+                  this.player.player.setVelocityY(100);
+                  this.player.player.body.setAllowGravity(true);
+                  break;
+              default:
+                  this.player.player.onlianne=false
+                  this.player.player.setVelocityY(0);
+                  this.player.player.body.setAllowGravity(false)
+                  break;
+          }
+
       }
-
-
-
-
-    if ((this.cursors.space.isDown || this.cursors.up.isDown) && this.player.player.body.onFloor()) {
-      this.player.jump()
-      console.log("oui")
-    }
-    if (this.cursors.left.isDown) {
-      this.player.moveLeft()
-    } else if (this.cursors.right.isDown) {
-      this.player.moveRight()
-    } else {
-      this.player.stop();
-    }
   }
 }

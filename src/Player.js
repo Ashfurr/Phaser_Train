@@ -6,6 +6,7 @@ class Player {
         this.player = this.scene.physics.add.sprite(1200, 300, 'player');
         this.player.key=0
         this.player.setBounce(0.1).setVelocityX(0);
+        this.player.onlianne=false
         this.scene.physics.add.collider(this.player, this.scene.platforms);
         this.scene.anims.create({
             key: 'walk',
@@ -30,21 +31,13 @@ class Player {
             repeat:-1,
 
         });
-        this.scene.physics.add.collider(this.player, this.scene.moves,this.force,null,this)
+
         this.scene.physics.add.collider(this.player, this.scene.doors,this.isKey,null,this)
         this.scene.physics.add.overlap(this.player, this.scene.key,this.getKey,null,this)
+        this.scene.physics.add.overlap(this.player, this.scene.lianne,this.tuch,null,this)
 
     }
-    force(player,moves){
-        if(player.body.touching.left || player.body.touching.right) {
-            moves.setImmovable(false)
-            this.pousse = true
-        }
-        if(player.body.touching.down){
-            moves.setImmovable()
-            this.player.body.blocked.down=true //ici on fais croire a phaser que le sprite est static pour pouvoir sauter dessus (uniquement valable pour utiliser la fonction onFloor())
-        }
-    }
+
     /**
      * des que  le player récupère une clef, la désactive et ajours +1 a la variable key du joueurs
      * @param player
@@ -54,6 +47,7 @@ class Player {
         this.player.key+=key.key
         key.body.enable=false
         key.visible=false
+        console.log(key)
     }
 
     /**
@@ -69,8 +63,12 @@ class Player {
             console.log('porte',door.key)
         }
     }
+    tuch(player, lianne){
+        player.onlianne=true
+        console.log(player.onlianne)
+    }
     jump(){
-        this.player.setVelocityY(-350);
+        this.player.setVelocityY(-400);
         this.player.play('jump', true);
         console.log(this.player.key)
     }
